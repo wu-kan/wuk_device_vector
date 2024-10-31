@@ -47,12 +47,13 @@ using thrust::device_vector;
 namespace wuk {
 
 template <typename T>
-bool equal(const device_vector<T> &lhs, const device_vector<T> &rhs, T eps);
+bool equal(const ::wuk::device_vector<T> &lhs,
+           const ::wuk::device_vector<T> &rhs, T eps);
 
 template <typename T,
           typename Tdistribution = thrust::uniform_real_distribution<T>>
-void generate(device_vector<T> &v, T a, T b,
-              int s = thrust::default_random_engine::default_seed);
+void random_generate(::wuk::device_vector<T> &v, T a, T b,
+                     int s = thrust::default_random_engine::default_seed);
 
 template <typename T> class AbsDiff : thrust::binary_function<T, T, char> {
   const T eps;
@@ -63,12 +64,13 @@ public:
     auto tmp = a < b ? b - a : a - b;
     return tmp >= eps;
   }
-  friend bool equal<T>(const device_vector<T> &lhs, const device_vector<T> &rhs,
-                       T eps);
+  friend bool equal<T>(const ::wuk::device_vector<T> &lhs,
+                       const ::wuk::device_vector<T> &rhs, T eps);
 };
 
 template <typename T>
-bool equal(const device_vector<T> &lhs, const device_vector<T> &rhs, T eps) {
+bool equal(const ::wuk::device_vector<T> &lhs,
+           const ::wuk::device_vector<T> &rhs, T eps) {
   if (lhs.size() != rhs.size())
     return false;
   auto pa = thrust::device_pointer_cast(lhs.data()),
@@ -78,10 +80,10 @@ bool equal(const device_vector<T> &lhs, const device_vector<T> &rhs, T eps) {
 }
 
 template <typename T, typename Tdistribution>
-class QuickGenerator : thrust::unary_function<T, T> {
+class RandomGenerator : thrust::unary_function<T, T> {
   const T _a, _b;
   const thrust::default_random_engine::result_type _seed;
-  QuickGenerator(T a, T b, thrust::default_random_engine::result_type s)
+  RandomGenerator(T a, T b, thrust::default_random_engine::result_type s)
       : _a(a), _b(b), _seed(s) {}
 
 public:
@@ -91,13 +93,14 @@ public:
     Tdistribution _dist(_a, _b);
     return _dist(rng);
   }
-  friend void generate<T, Tdistribution>(device_vector<T> &v, T a, T b, int s);
+  friend void random_generate<T, Tdistribution>(::wuk::device_vector<T> &v, T a,
+                                                T b, int s);
 };
 
 template <typename T, typename Tdistribution>
-void generate(device_vector<T> &v, T a, T b, int s) {
+void random_generate(::wuk::device_vector<T> &v, T a, T b, int s) {
   auto p = thrust::device_pointer_cast(v.data());
-  thrust::tabulate(p, p + v.size(), QuickGenerator<T, Tdistribution>(a, b, s));
+  thrust::tabulate(p, p + v.size(), RandomGenerator<T, Tdistribution>(a, b, s));
 }
 
 using thrust::raw_pointer_cast;
